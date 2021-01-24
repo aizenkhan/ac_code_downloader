@@ -1,15 +1,28 @@
-import logging
+import os
 
-from app.logger import INFO_FORMATTER
+import yaml
 
-# create the logger
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+from app.logger import get_logger, init_default_handler
 
-# defines the stream handler
-_handler = logging.StreamHandler()
-_handler.setLevel(logging.INFO)
-_handler.setFormatter(logging.Formatter(INFO_FORMATTER))
 
-# add the handler
-log.addHandler(_handler)
+# init variables
+_global_config_rel_path = "../files/globals.cfg.yaml"
+_global_config_abs_path = os.path.join(os.path.dirname(__file__), _global_config_rel_path)
+
+
+# read configuration from global config file and flatten
+with open(_global_config_abs_path) as in_stream:
+    _global_config_data = yaml.safe_load(in_stream)
+
+
+# flatten the config for the current environment
+_base_config_data = _global_config_data.get("dev")
+_base_config_data.update(_global_config_data.get(os.getenv("ENVIRONMENT", "dev")))
+
+
+# create the global logger
+log = get_logger(__name__, log_level=_base_config_data.get("log_level"))
+
+
+# setup the default handler
+init_default_handler(log, log_level=_base_config_data.get("log_level"))
