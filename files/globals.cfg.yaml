@@ -1,5 +1,8 @@
 # defaults to dev, add overrides in prod
 dev:
   log_level: "DEBUG"
+  platforms:
+    - cses
+    - atcoder
 prod:
   log_level: "INFO"
