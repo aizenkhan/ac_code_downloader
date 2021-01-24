@@ -1,0 +1,5 @@
+# defaults to dev, add overrides in prod
+dev:
+  log_level: "DEBUG"
+prod:
+  log_level: "INFO"

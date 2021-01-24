@@ -1,4 +1,4 @@
-# launcher file for the application
+""" launcher file for the application """
 
 # imports
 from app import log
