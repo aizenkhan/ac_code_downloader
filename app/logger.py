@@ -3,7 +3,7 @@ import logging
 
 # formatter for log types
 dict_log_formats = {
-    "DEBUG" : "[%(filename)s|%(name)s|%(funcName)s|%(lineno)d] %(message)s",
+    "DEBUG" : "[%(module)s|%(funcName)s|%(lineno)d] %(message)s",
     "INFO" : "%(message)s"
 }
 
