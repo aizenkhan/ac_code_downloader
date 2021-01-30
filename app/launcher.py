@@ -9,4 +9,5 @@ if __name__ == "__main__":
     # test log in
     csesParser = CsesParser()
     csesParser.run()
+    log.info("Done")
             
