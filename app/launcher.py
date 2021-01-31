@@ -10,4 +10,3 @@ if __name__ == "__main__":
     csesParser = CsesParser()
     csesParser.run()
     log.info("Done")
-            
