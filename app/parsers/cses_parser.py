@@ -1,12 +1,19 @@
 import pandas as pd
-
 from app import log
 from app.parsers.base_parser import BaseParser
 from app.utils.constants import (CSES_AC_PROBLEM_CLASS,
                                  CSES_ACCOUNT_ANCHOR_CLASS, CSES_BASE_URL,
                                  CSES_CSRF_TOKEN_FORM_NAME, CSES_LOGIN_URL,
+                                 CSES_NEXT_PAGE_CLASS, CSES_PAGE_SPAN_CLASS,
                                  CSES_PASSWORD_FORM_NAME,
-                                 CSES_PASSWORD_YAML_NAME, CSES_PROBLEMS_URL, CSES_PROBLEM_RESULTS_URL,
+                                 CSES_PASSWORD_YAML_NAME, CSES_PREV_PAGE_CLASS,
+                                 CSES_PROBLEM_RESULTS_URL, CSES_PROBLEMS_URL,
+                                 CSES_TABLE_CLASS, CSES_TABLE_CODE_LANG_COL,
+                                 CSES_TABLE_CODE_SIZE_COL,
+                                 CSES_TABLE_CODE_TIME_COL,
+                                 CSES_TABLE_SUBMISSION_COL,
+                                 CSES_TABLE_TIMESTAMP_COL,
+                                 CSES_TABLE_VERDICT_COL,
                                  CSES_USERNAME_FORM_NAME,
                                  CSES_USERNAME_YAML_NAME, CSES_YAML_REL_PATH)
 from app.utils.io_utils import (get_abs_path, get_all_data_from_yaml,
@@ -61,71 +68,91 @@ class CsesParser(BaseParser):
             "a", attrs={"class": CSES_ACCOUNT_ANCHOR_CLASS})["href"]
 
     def process(self, session, *args, **kwargs):
-        # extract list of all solved problems
+        # get the profile page
         CSES_ACCOUNT_URL = CSES_PROBLEMS_URL + self.user_id
         response = http_get(session, CSES_ACCOUNT_URL, self.headers, True)
 
+        # get all the solved problem tags from profile page
         user_statistics_content = parse(response.text)
         _list_ac_problem_tags = user_statistics_content.findAll(
             "a", attrs={"class": CSES_AC_PROBLEM_CLASS})
 
+        # get actual links of the solved problems
         list_ac_problem_links = [CSES_PROBLEM_RESULTS_URL + "/" + link["href"].strip(
             "/").split("/")[-1] for link in _list_ac_problem_tags]
 
         iters = 0
+        # go through each solved problem link and fetch AC submissions
         for link in list_ac_problem_links:
+            # get the problem page
             response = http_get(session, link, self.headers, True)
             ac_problem_content = parse(response.text)
-            _list_page_anchor_tags = ac_problem_content.find("div", attrs={"class": "pager wide"}).findAll(
-                "a", class_=lambda val: val not in ["next", "prev"])
+
+            # submissions can span across multiple sub-pages, so get links of all sub-pages
+            _list_page_anchor_tags = ac_problem_content.find("div", attrs={"class": CSES_PAGE_SPAN_CLASS}).findAll(
+                "a", class_=lambda val: val not in [CSES_NEXT_PAGE_CLASS, CSES_PREV_PAGE_CLASS])
             list_page_links = [CSES_BASE_URL + anchor_tag["href"]
                                for anchor_tag in _list_page_anchor_tags]
 
-            # iterate through each page
-            list_submission_data = []
-            _header_cells = []
+            list_submission_data = []  # table rows
+            _header_cells = []  # table header
 
+            # iterate through each sub-page
             for page_link in list_page_links:
+                # get the sub-page
                 response = http_get(session, page_link, self.headers, True)
                 current_page_content = parse(response.text)
+
+                # submissions are stored in a table element, so capture that
                 _table_element = current_page_content.find(
-                    "table", attrs={"class": "wide"})
+                    "table", attrs={"class": CSES_TABLE_CLASS})
 
                 # find header if not found already
                 if not _header_cells:
                     _header_row_element = _table_element.find(
                         "thead").find("tr")
-                    _header_cells = [cell.text if cell.text else "submission"
+                    # column containing links to code has no name i.e '', so assigning it a name
+                    _header_cells = [cell.text if cell.text else CSES_TABLE_SUBMISSION_COL
                                      for cell in _header_row_element.findAll("th")]
 
-                # find valid submissions
+                # find valid submissions from table
                 for row in _table_element.findAll("tr")[1:]:
                     _curr_dict = dict(zip(_header_cells, row.findAll("td")))
 
                     # ignore unaccepted submissions
-                    if _curr_dict.get("result").get("class") != CSES_AC_PROBLEM_CLASS:
+                    if _curr_dict.get(CSES_TABLE_VERDICT_COL).get("class") != CSES_AC_PROBLEM_CLASS:
                         continue
 
+                    # get text from cells except for verdict and submission columns
+                    # verdict column contains no text, whereas submission column links to code page
                     for key in _curr_dict:
-                        if key not in ["result", "submission"]:
+                        if key not in [CSES_TABLE_VERDICT_COL, CSES_TABLE_SUBMISSION_COL]:
                             _curr_dict[key] = _curr_dict.get(key).text.lower()
 
-                    # handle submission column
-                    _curr_dict["submission"] = CSES_BASE_URL + _curr_dict.get(
-                        "submission").find("a").get("href")
+                    # extract code page link from submission column
+                    _curr_dict[CSES_TABLE_SUBMISSION_COL] = CSES_BASE_URL + _curr_dict.get(
+                        CSES_TABLE_SUBMISSION_COL).find("a").get("href")
+
+                    # add the row to our list of rows
                     list_submission_data.append(_curr_dict)
 
+            # make dataframe from our list of (dict) rows
             df = pd.DataFrame(list_submission_data)
 
             # clean up the dataframe
             # 1. drop unnecessary columns
-            df.drop(["time", "result"], inplace=True, axis=1)
+            df.drop([CSES_TABLE_TIMESTAMP_COL, CSES_TABLE_VERDICT_COL],
+                    inplace=True, axis=1)
 
-            # 2. remove 's' and 'ch' from 'code time' and 'code size' cols resp.
-            df[["code time", "code size"]] = df[["code time", "code size"]
-                                                ].applymap(lambda x: x.split(" ")[0])
+            # 2. remove 's' and 'ch' from 'code time' and 'code size' columns resp. and make them numeric
+            df[[CSES_TABLE_CODE_TIME_COL, CSES_TABLE_CODE_SIZE_COL]] = df[[CSES_TABLE_CODE_TIME_COL, CSES_TABLE_CODE_SIZE_COL]
+                                                                          ].applymap(lambda x: x.split(" ")[0]).astype(float)
 
-            print(df)
+            # 3. group by language and get rows having minimum code time
+            df = df.loc[df.groupby(CSES_TABLE_CODE_LANG_COL)[CSES_TABLE_CODE_TIME_COL].idxmin()].reset_index(
+                drop=True)
+            
+            # TODO : parse dataframe and fetch actual code from code page
 
             # TODO : remove the break (testing few problem links for now)
             iters += 1
