@@ -1,7 +1,12 @@
 """ Contains utilities related to web requests """
 import requests
 from bs4 import BeautifulSoup as soup
+from bs4.builder import HTMLParserTreeBuilder
 from contextlib import contextmanager
+
+
+custom_builder = HTMLParserTreeBuilder()
+custom_builder.cdata_list_attributes["*"].remove("class")
 
 
 def http_get(session, url, headers=None, verify=False):
@@ -15,7 +20,7 @@ def http_post(session, url, payload, headers=None):
 
 
 def parse(html):
-    content = soup(html, "html.parser")
+    content = soup(html, "html.parser", builder=custom_builder)
     return content
 
 
