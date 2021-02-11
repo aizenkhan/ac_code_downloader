@@ -17,6 +17,7 @@ CSES_TABLE_CODE_SIZE_COL = "code size"
 # other page constants
 CSES_ACCOUNT_ANCHOR_CLASS = "account"
 CSES_AC_PROBLEM_CLASS = "task-score icon full"
+CSES_AC_PROBLEM_TITLE_CLASS = "title-block"
 CSES_PAGE_SPAN_CLASS = "pager wide"
 CSES_NEXT_PAGE_CLASS = "next"
 CSES_PREV_PAGE_CLASS = "prev"
@@ -35,3 +36,10 @@ CSES_BASE_URL = "https://cses.fi"
 CSES_LOGIN_URL = "https://cses.fi/login"
 CSES_PROBLEMS_URL = "https://cses.fi/problemset"
 CSES_PROBLEM_RESULTS_URL = "https://cses.fi/problemset/view"
+
+# extension mappings
+EXTENSION_MAPPING = {
+    "java": "java",
+    "c++": "cpp",
+    "python": "py"
+}
