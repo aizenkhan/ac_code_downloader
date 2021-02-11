@@ -15,6 +15,22 @@ def get_all_data_from_file(file_path):
         return in_stream.read()
 
 
+def _make_par_dirs(path):
+    os.makedirs(path, exist_ok=True)
+
+
+def join(*args):
+    return os.path.join(*args)
+
+
+def write_all_data_to_file(file_path, data, mode="w+", create_parent_dirs=False):
+    # create parent dirs if absent
+    if create_parent_dirs:
+        _make_par_dirs(os.path.dirname(file_path))
+    with open(file_path, mode=mode) as out_stream:
+        out_stream.write(data)
+
+
 def get_abs_path(rel_path, caller_script_directory):
     return os.path.join(os.path.dirname(caller_script_directory), rel_path)
 
