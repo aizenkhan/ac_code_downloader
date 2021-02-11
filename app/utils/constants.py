@@ -20,11 +20,15 @@ CSES_AC_PROBLEM_CLASS = "task-score icon full"
 CSES_PAGE_SPAN_CLASS = "pager wide"
 CSES_NEXT_PAGE_CLASS = "next"
 CSES_PREV_PAGE_CLASS = "prev"
+CSES_CODE_LINK_CONTENT_CLASS = "prettyprint linenums resize-horizontal"
 
 # yaml constants
 CSES_YAML_REL_PATH = "../../files/cses.yaml"
 CSES_USERNAME_YAML_NAME = "username"
 CSES_PASSWORD_YAML_NAME = "password"
+
+# file constants
+CSES_REL_OUT_DIR = "../../.out"
 
 # url constants
 CSES_BASE_URL = "https://cses.fi"
