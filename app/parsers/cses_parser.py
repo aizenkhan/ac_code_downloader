@@ -2,7 +2,7 @@ import pandas as pd
 from app import log
 from app.parsers.base_parser import BaseParser
 from app.utils.constants import (CSES_AC_PROBLEM_CLASS,
-                                 CSES_ACCOUNT_ANCHOR_CLASS, CSES_BASE_URL,
+                                 CSES_ACCOUNT_ANCHOR_CLASS, CSES_AC_PROBLEM_TITLE_CLASS, CSES_BASE_URL,
                                  CSES_CODE_LINK_CONTENT_CLASS,
                                  CSES_CSRF_TOKEN_FORM_NAME, CSES_LOGIN_URL,
                                  CSES_NEXT_PAGE_CLASS, CSES_PAGE_SPAN_CLASS,
@@ -17,7 +17,7 @@ from app.utils.constants import (CSES_AC_PROBLEM_CLASS,
                                  CSES_TABLE_VERDICT_COL,
                                  CSES_USERNAME_FORM_NAME,
                                  CSES_USERNAME_YAML_NAME, CSES_YAML_REL_PATH,
-                                 CSES_REL_OUT_DIR)
+                                 CSES_REL_OUT_DIR, EXTENSION_MAPPING)
 from app.utils.io_utils import (get_abs_path, get_all_data_from_yaml,
                                 validate_keys, write_all_data_to_file, join)
 from app.utils.web_utils import http_get, http_post, parse
@@ -97,7 +97,7 @@ class CsesParser(BaseParser):
 
             # get the problem name
             _problem_name = ac_problem_content.find(
-                "div", attrs={"class": "title-block"}).find("h1").text
+                "div", attrs={"class": CSES_AC_PROBLEM_TITLE_CLASS}).find("h1").text
 
             # submissions can span across multiple sub-pages, so get links of all sub-pages
             _list_page_anchor_tags = ac_problem_content.find("div", attrs={"class": CSES_PAGE_SPAN_CLASS}).findAll(
@@ -166,7 +166,7 @@ class CsesParser(BaseParser):
             # 4. parse dataframe and fetch actual code from code page
             for index in range(df.shape[0]):
                 code_link = df.iloc[index][CSES_TABLE_SUBMISSION_COL]
-                code_lang = df.iloc[index][CSES_TABLE_CODE_LANG_COL]
+                code_lang = df.iloc[index][CSES_TABLE_CODE_LANG_COL].lower()
 
                 # get the code-link page
                 response = http_get(session, code_link, self.headers, True)
@@ -176,14 +176,10 @@ class CsesParser(BaseParser):
                 code = code_link_content.find(
                     "pre", attrs={"class": CSES_CODE_LINK_CONTENT_CLASS}).text
 
-                # write code to file
-                # TODO: add extension as per the language
+                # 5. write code to file
+                compressed_problem_name = _problem_name.replace(" ", "")
                 path_to_write = join(
-                    _cses_out_abs_dir, _problem_name, code_lang, "out.java")
+                    _cses_out_abs_dir, _problem_name, code_lang, f"{compressed_problem_name}.{EXTENSION_MAPPING.get(code_lang)}")
                 write_all_data_to_file(
                     path_to_write, code, create_parent_dirs=True)
-
-            # TODO : remove the break (testing few problem links for now)
-            iters += 1
-            if iters > 4:
-                break
+                log.info(f"Written to {path_to_write}")
