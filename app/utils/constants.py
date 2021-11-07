@@ -38,8 +38,4 @@ CSES_PROBLEMS_URL = "https://cses.fi/problemset"
 CSES_PROBLEM_RESULTS_URL = "https://cses.fi/problemset/view"
 
 # extension mappings
-EXTENSION_MAPPING = {
-    "java": "java",
-    "c++": "cpp",
-    "python": "py"
-}
+EXTENSION_MAPPING = {"java": "java", "c++": "cpp", "python": "py"}

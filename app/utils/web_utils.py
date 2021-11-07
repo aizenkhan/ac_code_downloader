@@ -26,8 +26,6 @@ def parse(html):
 
 @contextmanager
 def managed_session():
-    try:
-        session = requests.session()
-        yield session
-    finally:
-        session.close()
+    session = requests.session()
+    yield session
+    session.close()

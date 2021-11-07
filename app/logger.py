@@ -3,15 +3,15 @@ import logging
 
 # formatter for log types
 dict_log_formats = {
-    "DEBUG" : "[%(module)s|%(funcName)s|%(lineno)d] %(message)s",
-    "INFO" : "%(message)s"
+    "DEBUG": "[%(module)s|%(funcName)s|%(lineno)d] %(message)s",
+    "INFO": "%(message)s",
 }
 
 
 # get logger for the module name
 def get_logger(module, log_level="DEBUG"):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(getattr(logging,log_level.upper()))
+    logger = logging.getLogger(module)
+    logger.setLevel(getattr(logging, log_level.upper()))
     return logger
 
 
@@ -22,3 +22,4 @@ def init_default_handler(logger, log_level="DEBUG"):
     _handler.setLevel(getattr(logging, log_level))
     _handler.setFormatter(logging.Formatter(dict_log_formats.get(log_level)))
     logger.addHandler(_handler)
+
