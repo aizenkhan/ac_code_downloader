@@ -22,4 +22,3 @@ def init_default_handler(logger, log_level="DEBUG"):
     _handler.setLevel(getattr(logging, log_level))
     _handler.setFormatter(logging.Formatter(dict_log_formats.get(log_level)))
     logger.addHandler(_handler)
-
